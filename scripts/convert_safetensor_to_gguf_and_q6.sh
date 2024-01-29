@@ -9,12 +9,11 @@ NUM_PROCESSORS=24
 QUANT=q6_k
 set -e
 
-# Copy metadata from base model since what came out of the QLoRA embedding process was missing something
-#cd $MODEL_FOLDER
-#mkdir old_meta
-#mv *.json old_meta
-#cp $BASE_MODEL_PATH/*.json .
-#cp $BASE_MODEL_PATH/*.model .
+if [[ ! -f  "$LLAMA_CPP_PATH/convert.py" || ! -f  "$LLAMA_CPP_PATH/quantize"  || ! -f  "$BASE_MODEL_PATH" ]]; then
+  echo "Please ensure llama.cpp is compiled and available on the path $LLAMA_CPP_PATH (or set the env var LLAMA_CPP_PATH)"
+  echo "and that the model is downloaded to $BASE_MODEL_PATH (or set the env var BASE_MODEL_PATH) and try again"
+  exit 1
+fi
 
 mkdir $OUTPUT_FOLDER || EXIT_CODE=$?
 cd $SCRIPT_DIR
