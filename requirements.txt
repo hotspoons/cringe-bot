@@ -1,0 +1,8 @@
+bitsandbytes==0.42.0
+transformers==4.36.2
+peft==0.7.1
+accelerate==0.26.1
+matplotlib==3.7.4
+wandb==0.16.2
+datasets==2.16.1
+html2text==2020.1.16
