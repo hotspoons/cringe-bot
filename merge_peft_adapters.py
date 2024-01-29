@@ -1,58 +1,64 @@
 
-# From https://gist.github.com/TheBloke/d31d289d3198c24e0ca68aaf37a19032
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import PeftModel, LoraConfig
+import json, os, glob
 import torch
+from config import Config
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from peft import PeftModel
 
-import os
-import argparse
+# Adapted from https://gist.github.com/TheBloke/d31d289d3198c24e0ca68aaf37a19032
 
-def get_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--base_model_name_or_path", type=str)
-    parser.add_argument("--peft_model_path", type=str)
-    parser.add_argument("--output_dir", type=str)
-    parser.add_argument("--device", type=str, default="auto")
-    parser.add_argument("--push_to_hub", action="store_true")
+class MergePeftAdapters:
+    def __init__(self, config: Config) -> None:
+        self.config = config.config
+        self.parameter_map = config.get_parameter_map()
 
-    return parser.parse_args()
+    def get_device_map(self):
+        device_map = self.config.merge_device_map if self.config.merge_device_map else self.config.device_map
+        if '"' in device_map:
+            device_map = json.loads(self.config.device_map)
+        if isinstance(device_map, str):
+            if device_map == 'auto':
+                return { 'device_map': 'auto' }
+            else:
+                return { 'device_map': { "": device_map} }
+        else:
+            return { 'device_map': device_map }
+            
 
-def main():
-    args = get_args()
+    def get_model(self):
+        print(self.get_device_map())
+        return AutoModelForCausalLM.from_pretrained(
+            self.config.model,
+            offload_folder="offload/",
+            return_dict=True,
+            torch_dtype=torch.float16,
+            **self.get_device_map()
+        )
+    
+    def get_lora_snapshot(self):
+        snapshots_folder = self.parameter_map['training']['output_dir']
+        if self.config.merge_checkpoint_id == '':
+            return self.config.peft_folder
+        else:
+            snapshot = snapshots_folder + '/' + self.config.merge_checkpoint_id
+            print(f"Using snapshot {snapshot}")
+            return snapshot
 
-    if args.device == 'auto':
-        device_arg = { 'device_map': 'auto' }
-    else:
-        device_arg = { 'device_map': { "": args.device} }
+    def merge(self):
+        args = self.config
 
-    print(f"Loading base model: {args.base_model_name_or_path}")
-    base_model = AutoModelForCausalLM.from_pretrained(
-        args.base_model_name_or_path,
-        offload_folder="offload/",
-        return_dict=True,
-        torch_dtype=torch.float16,
-        **device_arg
-    )
-
-    print(f"Loading PEFT: {args.peft_model_path}")
-    model = PeftModel.from_pretrained(
-        base_model, 
-        args.peft_model_path, 
-        offload_folder="offload/",
-        **device_arg)
-    print(f"Running merge_and_unload")
-    model = model.merge_and_unload()
-
-    tokenizer = AutoTokenizer.from_pretrained(args.base_model_name_or_path)
-
-    if args.push_to_hub:
-        print(f"Saving to hub ...")
-        model.push_to_hub(f"{args.output_dir}", use_temp_dir=False)
-        tokenizer.push_to_hub(f"{args.output_dir}", use_temp_dir=False)
-    else:
-        model.save_pretrained(f"{args.output_dir}")
-        tokenizer.save_pretrained(f"{args.output_dir}")
-        print(f"Model saved to {args.output_dir}")
-
-if __name__ == "__main__" :
-    main()
+        print(f"Loading base model: {args.model}")
+        base_model = self.get_model()
+        snapshot_or_final = self.get_lora_snapshot()
+        print(f"Loading PEFT: {snapshot_or_final}")
+        model = PeftModel.from_pretrained(
+                base_model, 
+                self.snapshot_or_final, 
+                offload_folder="offload/",
+                **self.get_device_map())
+        print(f"Running merge_and_unload")
+        model = model.merge_and_unload()
+        tokenizer = AutoTokenizer.from_pretrained(args.model)
+        model.save_pretrained(f"{args.merged_folder}")
+        tokenizer.save_pretrained(f"{args.merged_folder}")
+        print(f"Model saved to {args.merged_folder}")
