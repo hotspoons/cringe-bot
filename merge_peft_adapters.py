@@ -10,6 +10,7 @@ from peft import PeftModel
 class MergePeftAdapters:
     def __init__(self, config: Config) -> None:
         self.config = config.config
+        self.logger = config.logger
         self.parameter_map = config.get_parameter_map()
 
     def get_device_map(self):
@@ -26,7 +27,7 @@ class MergePeftAdapters:
             
 
     def get_model(self):
-        print(self.get_device_map())
+        self.logger.info(self.get_device_map())
         return AutoModelForCausalLM.from_pretrained(
             self.config.model,
             offload_folder="offload/",
@@ -41,24 +42,24 @@ class MergePeftAdapters:
             return self.config.peft_folder
         else:
             snapshot = snapshots_folder + '/' + self.config.merge_checkpoint_id
-            print(f"Using snapshot {snapshot}")
+            self.logger.info(f"Using snapshot {snapshot}")
             return snapshot
 
     def merge(self):
         args = self.config
 
-        print(f"Loading base model: {args.model}")
+        self.logger.info(f"Loading base model: {args.model}")
         base_model = self.get_model()
         snapshot_or_final = self.get_lora_snapshot()
-        print(f"Loading PEFT: {snapshot_or_final}")
+        self.logger.info(f"Loading PEFT: {snapshot_or_final}")
         model = PeftModel.from_pretrained(
                 base_model, 
                 self.snapshot_or_final, 
                 offload_folder="offload/",
                 **self.get_device_map())
-        print(f"Running merge_and_unload")
+        self.logger.info(f"Running merge_and_unload")
         model = model.merge_and_unload()
         tokenizer = AutoTokenizer.from_pretrained(args.model)
         model.save_pretrained(f"{args.merged_folder}")
         tokenizer.save_pretrained(f"{args.merged_folder}")
-        print(f"Model saved to {args.merged_folder}")
+        self.logger.info(f"Model saved to {args.merged_folder}")

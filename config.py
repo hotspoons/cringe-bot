@@ -11,6 +11,7 @@ class Config():
         self.parameter_map = None
         self.parse_args()
         self.logger = logging.getLogger()
+        logging.basicConfig()
         self.logger.setLevel(self.config.log_level)
         self.logger.info("Application configured")
 
@@ -41,6 +42,9 @@ class Config():
                             'chat logs. This will be searched recursively for htm/html files', **self.envar_or_req('CHATS_LOCATION', True))
         parser.add_argument('-s', '--screen-names', help='A comma-separated list of screen names to use as the assistant role', 
                             **self.envar_or_req('SCREEN_NAMES', True))
+        parser.add_argument('-r', '--replacement-dict-json', help='Path to an optional replacement dictonary for terms, names, etc. you wish to replace in AIM chats. ' + 
+                            'Format of file is \'{"Joe": "Brian", "Bill": "Steve"}\'. Keys will be searched as case insensitive.', 
+                            **self.envar_or_req('REPLACEMENT_DICT_JSON', False, ''))
         parser.add_argument('-f', '--peft-folder', help='Folder for where PEFT/LoRA weights will be stored, must be writable', 
                             **self.envar_or_req('PEFT_FOLDER', True))
         parser.add_argument('-M', '--merged-folder', help='Provide a destination folder for the LoRA weights merged into the base model. Defaults to ${current_folder}/merged', 
