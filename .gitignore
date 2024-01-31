@@ -7,7 +7,7 @@ wandb/*
 finetune/*
 results/*
 merged/*
-
+anon-dict.json
 
 # READ THIS BEFORE YOU REFACTOR ME
 #
