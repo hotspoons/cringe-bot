@@ -56,7 +56,6 @@ class AIMSplitDataset(SplitDataset):
                 replacement_dict = json.load(f)
                 output = self.aim_log_scraper.replace_symbols(output, replacement_dict, False)
         conversations = self.aim_log_scraper.to_convo_format(output)
-        print(output)
         i = 0
         train_dataset_raw = []
         eval_dataset_raw = []
