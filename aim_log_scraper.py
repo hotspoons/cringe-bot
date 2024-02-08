@@ -161,7 +161,7 @@ class AimLogScraper():
         return list_of_convos
 
     def replace_symbols(self, text: str, replacement_dict: dict, case_sensitive: bool):
-        print(text)
+        #print(text)
         for key, val in replacement_dict.items():
             # If a key starts with a caret, don't add a leading space and strip the caret
             if key[0] == '^':
