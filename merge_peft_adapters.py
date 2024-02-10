@@ -54,7 +54,7 @@ class MergePeftAdapters:
         self.logger.info(f"Loading PEFT: {snapshot_or_final}")
         model = PeftModel.from_pretrained(
                 base_model, 
-                self.snapshot_or_final, 
+                snapshot_or_final, 
                 offload_folder="offload/",
                 **self.get_device_map())
         self.logger.info(f"Running merge_and_unload")
