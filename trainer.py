@@ -26,7 +26,7 @@ class Trainer():
         if self.config.project_name:
             os.environ["WANDB_PROJECT"] = self.config.project_name
         else:
-            os.environ["WANDB_PROJECT"] = f"{re.compile('[^a-zA-Z]').sub('-', self.config.model)}-qlora-finetun"
+            os.environ["WANDB_PROJECT"] = f"{re.compile('[^a-zA-Z0-9_]').sub('-', self.config.model)}-finetune"
 
         wandb.login(**kwargs)
 
